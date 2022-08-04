@@ -49,4 +49,4 @@ module.exports = (sequelize) => {
     };
 
     return Courses;
-};
+}
