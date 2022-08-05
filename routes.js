@@ -5,8 +5,13 @@ const auth = require('basic-auth');
 const { authenticateUser } = require('./middleware/auth-user');
 const { asyncHandler } = require('./middleware/asyncHandler');
 const { User, Courses } = require('./models');
+
+// Construct a router instance.
 const router = express.Router();
 
+// Route returns current authenticated user
+// filters data values of current user
+// to return firstName, lastName and emailAddress
 router.get(
   "/users",
   authenticateUser,
@@ -64,6 +69,9 @@ router.post(
   })
 );
 
+// route returns all courses including the User associated with
+// each course and 200 HTTP status code.
+
 router.get(
   "/courses",
   asyncHandler(async (req, res) => {
@@ -83,6 +91,9 @@ router.get(
   })
 );
 
+// route returns corresponding course
+// including the User associated with that course
+// 200 HTTP status code.
 router.get(
   "/courses/:id",
   asyncHandler(async (req, res) => {
@@ -96,8 +107,11 @@ router.get(
     });
     if (course) {
       const courseInfo = course.dataValues;
+      // takes the course information and turns it into an array
       const neededInfo = Object.entries(courseInfo);
+      // cuts "createdAt and updatedAt and 'userId' out of the array"
       neededInfo.splice(5, 3);
+      // turns the array back into an object with key:value pairs
       const displayCourseInfo = Object.fromEntries(neededInfo);
 
       res.json(displayCourseInfo).status(200);
@@ -107,6 +121,9 @@ router.get(
   })
 );
 
+// POST route creates new course,
+// set the Location header to the URI for the newly created course,
+// returns 201 HTTP status code and no content
 router.post(
   "/courses",
   authenticateUser,
@@ -116,6 +133,7 @@ router.post(
     try {
       course = await Courses.create(req.body);
       let errors = [];
+      // validate that there is a title value
       if (!course.title) {
         errors.push("Please provide a value for title");
       }
@@ -137,6 +155,8 @@ router.post(
   })
 );
 
+// PUT route updates the corresponding course
+// returns 204 HTTP status code and no content
 router.put(
   "/courses/:id",
   authenticateUser,
@@ -145,6 +165,8 @@ router.put(
     let course;
     try {
       course = await Courses.findByPk(req.params.id);
+      // conditional matches user ID if user with courseID of course
+      // authenticating if user has authorization to perform update
       if (user.id === course.dataValues.userId) {
         if (course) {
           await course.update(req.body);
@@ -169,12 +191,16 @@ router.put(
   })
 );
 
+// DELETE route that deletes corresponding course
+// returns 204 HTTP status code and no content
 router.delete(
   "/courses/:id",
   authenticateUser,
   asyncHandler(async (req, res) => {
     const user = req.currentUser;
     const course = await Courses.findByPk(req.params.id);
+    // conditional to match user ID if user with courseID of course
+    // to authenticate if the user has authorization to perform delete
     if (user.id === course.dataValues.userId) {
       await course.destroy();
       res.status(204).end();
